@@ -31,8 +31,8 @@ def urljoin(domain, path=None, scheme=None):
     return urlunparse((scheme, domain, path or '', None, None, None))
 
 
-def reverse(viewname, subdomain=None, scheme=None, args=None, kwargs=None,
-        current_app=None, request=None):
+def reverse(viewname, subdomain=None, scheme=None, ssl=False, args=None, kwargs=None,
+            current_app=None, request=None):
     """
     Reverses a URL from the given parameters, in a similar fashion to
     :meth:`django.core.urlresolvers.reverse`.
@@ -54,13 +54,16 @@ def reverse(viewname, subdomain=None, scheme=None, args=None, kwargs=None,
         domain = '%s.%s' % (subdomain, domain)
 
     path = simple_reverse(viewname, urlconf=urlconf, args=args, kwargs=kwargs,
-        current_app=current_app)
+                          current_app=current_app)
 
     if request and domain == request.get_host():
         if scheme is '' or (
             (scheme is 'http' and not request.is_secure()) or
             (scheme is 'https' and request.is_secure())):
             return path
+
+    if ssl and not settings.DEBUG:
+        scheme = 'https'
 
     return urljoin(domain, path, scheme=scheme)
 
