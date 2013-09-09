@@ -26,6 +26,11 @@ def prefix_values(dictionary, prefix):
         for key, value in dictionary.iteritems())
 
 
+def secure(request):
+    request.is_secure = lambda: True
+    return request
+
+
 class SubdomainTestMixin(object):
     DOMAIN = 'example.com'
     URL_MODULE_PATH = 'subdomains.tests.urls'
@@ -169,14 +174,11 @@ class SubdomainURLRoutingTestCase(SubdomainTestMixin, TestCase):
 
 class SubdomainURLReverseTestCase(SubdomainTestMixin, TestCase):
     def test_url_join(self):
-        self.assertEqual(urljoin(self.DOMAIN), 'http://%s' % self.DOMAIN)
+        self.assertEqual(urljoin(self.DOMAIN, scheme='http'),
+            'http://%s' % self.DOMAIN)
         self.assertEqual(urljoin(self.DOMAIN, scheme='https'),
             'https://%s' % self.DOMAIN)
-
-        with override_settings(DEFAULT_URL_SCHEME='https'):
-            self.assertEqual(urljoin(self.DOMAIN), 'https://%s' % self.DOMAIN)
-
-        self.assertEqual(urljoin(self.DOMAIN, path='/example/'),
+        self.assertEqual(urljoin(self.DOMAIN, scheme='http', path='/example/'),
             'http://%s/example/' % self.DOMAIN)
 
     def test_implicit_reverse(self):
@@ -206,6 +208,46 @@ class SubdomainURLReverseTestCase(SubdomainTestMixin, TestCase):
         self.assertRaises(TypeError,
             lambda: reverse('home',
                 urlconf=self.get_path_to_urlconf('marketing')))
+
+    def test_reverse_with_request_same_domain(self):
+        request = RequestFactory().get('/', HTTP_HOST=self.DOMAIN)
+        self.assertEqual(reverse('home', request=request), '/')
+
+    def test_reverse_with_request_different_subdomain(self):
+        host = 'wildcard.%s' % self.DOMAIN
+        request = RequestFactory().get('/', HTTP_HOST=host)
+        self.assertEqual(reverse('home', request=request),
+            'http://%s/' % self.DOMAIN)
+
+    def test_reverse_with_request_same_subdomain(self):
+        subdomain = 'wildcard'
+        host = '%s.%s' % (subdomain, self.DOMAIN)
+        request = RequestFactory().get('/', HTTP_HOST=host)
+        self.assertEqual(reverse('home', request=request, subdomain=subdomain),
+            '/')
+
+    def test_reverse_with_request_protocol_relative(self):
+        request = RequestFactory().get('/', HTTP_HOST=self.DOMAIN)
+        self.assertEqual(reverse('home', scheme='', request=request), '/')
+
+    def test_reverse_with_request_secure_protocol_relative(self):
+        request = secure(RequestFactory().get('/', HTTP_HOST=self.DOMAIN))
+        self.assertEqual(reverse('home', scheme='', request=request), '/')
+
+    def test_reverse_with_request_protocol_unsecure_to_secure(self):
+        request = RequestFactory().get('/', HTTP_HOST=self.DOMAIN)
+        self.assertEqual(reverse('home', scheme='https', request=request),
+            'https://%s/' % self.DOMAIN)
+
+    def test_reverse_with_request_protocol_secure_to_default(self):
+        request = secure(RequestFactory().get('/', HTTP_HOST=self.DOMAIN))
+        self.assertEqual(reverse('home', request=request),
+            'http://%s/' % self.DOMAIN)
+
+    def test_reverse_with_request_protocol_secure_to_unsecure(self):
+        request = secure(RequestFactory().get('/', HTTP_HOST=self.DOMAIN))
+        self.assertEqual(reverse('home', scheme='http', request=request),
+            'http://%s/' % self.DOMAIN)
 
     def test_using_not_default_urlconf(self):
         # Ensure that changing the currently active URLconf to something other
