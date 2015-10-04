@@ -23,7 +23,7 @@ class SubdomainMiddleware(object):
         Returns the domain that will be used to identify the subdomain part
         for this request.
         """
-        return get_domain()
+        return get_domain(request)
 
     def process_request(self, request):
         """

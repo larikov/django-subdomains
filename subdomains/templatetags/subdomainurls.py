@@ -31,4 +31,4 @@ def url(context, view, subdomain=None, ssl=False, *args, **kwargs):
 
     """
 
-    return reverse(view, subdomain=subdomain, ssl=ssl, args=args, kwargs=kwargs)
+    return reverse(view, subdomain=subdomain, ssl=ssl, request=context.request, args=args, kwargs=kwargs)

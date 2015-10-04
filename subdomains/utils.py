@@ -6,8 +6,16 @@ from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse as simple_reverse
 
 
-def current_site_domain():
-    domain = Site.objects.get_current().domain
+def current_site_domain(request=None):
+    domain = request and request.get_host()
+
+    try:
+        domain = domain.split('.', 1)[-1:][0]
+    except Exception:
+        domain = None
+    
+    if not domain or domain not in settings.AVAILABLE_DOMAINS:
+        domain = Site.objects.get_current().domain
 
     prefix = 'www.'
     if (getattr(settings, 'REMOVE_WWW_FROM_DOMAIN', False) and 
@@ -49,7 +57,7 @@ def reverse(viewname, subdomain=None, scheme=None, ssl=False, args=None, kwargs=
     if scheme is None:
         scheme = getattr(settings, 'DEFAULT_URL_SCHEME', 'http')
 
-    domain = get_domain()
+    domain = get_domain(request)
     if subdomain is not None:
         domain = '%s.%s' % (subdomain, domain)
 
