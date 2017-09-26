@@ -9,7 +9,7 @@ from django.contrib.sites.models import Site
 try:
     from django.core.urlresolvers import reverse as simple_reverse
 except ImportError:
-    from django.urls import reverse
+    from django.urls import reverse as simple_reverse
 
 
 def current_site_domain(request=None):
