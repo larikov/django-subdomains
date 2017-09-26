@@ -6,7 +6,10 @@ except ImportError:
 
 from django.conf import settings
 from django.contrib.sites.models import Site
-from django.core.urlresolvers import reverse as simple_reverse
+try:
+    from django.core.urlresolvers import reverse as simple_reverse
+except ImportError:
+    from django.urls import reverse
 
 
 def current_site_domain(request=None):
@@ -61,6 +64,7 @@ def reverse(viewname, subdomain=None, scheme=None, ssl=False, args=None, kwargs=
         scheme = getattr(settings, 'DEFAULT_URL_SCHEME', 'http')
 
     domain = get_domain(request)
+
     if subdomain is not None:
         domain = '%s.%s' % (subdomain, domain)
 

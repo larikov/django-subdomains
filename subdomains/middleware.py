@@ -48,6 +48,13 @@ class SubdomainURLRoutingMiddleware(SubdomainMiddleware):
     """
     A middleware class that allows for subdomain-based URL routing.
     """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        return self.get_response(request)
+    
     def process_request(self, request):
         """
         Sets the current request's ``urlconf`` attribute to the urlconf
