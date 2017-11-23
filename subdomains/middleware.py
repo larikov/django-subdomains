@@ -53,6 +53,27 @@ class SubdomainURLRoutingMiddleware(SubdomainMiddleware):
         self.get_response = get_response
 
     def __call__(self, request):
+        domain, host = map(lower,
+            (self.get_domain_for_request(request), request.get_host()))
+
+        pattern = r'^(?:(?P<subdomain>.*?)\.)?%s(?::.*)?$' % re.escape(domain)
+        matches = re.match(pattern, host)
+
+        if matches:
+            request.subdomain = matches.group('subdomain')
+        else:
+            request.subdomain = None
+            logger.warning('The host %s does not belong to the domain %s, '
+                'unable to identify the subdomain for this request',
+                request.get_host(), domain)
+        subdomain = getattr(request, 'subdomain', UNSET)
+
+        if subdomain is not UNSET:
+            urlconf = settings.SUBDOMAIN_URLCONFS.get(subdomain)
+            if urlconf is not None:
+                logger.debug("Using urlconf %s for subdomain: %s",
+                    repr(urlconf), repr(subdomain))
+                request.urlconf = urlconf
         return self.get_response(request)
     
     def process_request(self, request):
