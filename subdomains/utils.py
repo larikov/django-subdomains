@@ -72,9 +72,9 @@ def reverse(viewname, subdomain=None, scheme=None, ssl=False, args=None, kwargs=
                           current_app=current_app)
 
     if request and domain == request.get_host():
-        if scheme is '' or (
-            (scheme is 'http' and not request.is_secure()) or
-            (scheme is 'https' and request.is_secure())):
+        if scheme == '' or (
+            (scheme == 'http' and not request.is_secure()) or
+            (scheme == 'https' and request.is_secure())):
             return path
 
     if ssl and not settings.DEBUG:
